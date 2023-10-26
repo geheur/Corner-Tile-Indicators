@@ -47,14 +47,16 @@ public class CornerTileIndicatorsOverlay extends Overlay
 {
 	private final Client client;
 	private final CornerTileIndicatorsConfig config;
-	private final CornerTileIndicatorsPlugin plugin;
+
+	private WorldPoint lastPlayerPosition = new WorldPoint(0, 0, 0);
+	private int lastTickPlayerMoved = 0;
+	private long lastTimePlayerStoppedMoving = 0;
 
 	@Inject
-	private CornerTileIndicatorsOverlay(Client client, CornerTileIndicatorsConfig config, CornerTileIndicatorsPlugin plugin)
+	private CornerTileIndicatorsOverlay(Client client, CornerTileIndicatorsConfig config)
 	{
 		this.client = client;
 		this.config = config;
-		this.plugin = plugin;
 		setPosition(OverlayPosition.DYNAMIC);
 		setLayer(OverlayLayer.ABOVE_SCENE);
 		setPriority(OverlayPriority.MED);
@@ -79,31 +81,42 @@ public class CornerTileIndicatorsOverlay extends Overlay
 
 		if (config.highlightCurrentTile())
 		{
-			final LocalPoint playerPosLocal = LocalPoint.fromWorld(client, plugin.getLastPlayerPosition());
-			if (playerPosLocal == null)
+			WorldPoint playerPos = client.getLocalPlayer().getWorldLocation();
+
+			if (!playerPos.equals(lastPlayerPosition))
 			{
-				return null;
+				lastTickPlayerMoved = client.getTickCount();
+			}
+			else if (lastTickPlayerMoved + 1 == client.getTickCount())
+			{
+				lastTimePlayerStoppedMoving = System.currentTimeMillis();
 			}
 
-			Color color = config.highlightCurrentColor();
-			Color fillColor = config.currentTileFillColor();
-			// When not fading out the current tile, or when it has been 1 game tick or less since the player last
-			// moved, draw the tile at full opacity. When using fadeout, drawing the indicator at full opacity for 1
-			// game tick prevents it from fading out when moving on consecutive ticks.
-			if (!config.trueTileFadeout() || client.getTickCount() - plugin.getLastTickPlayerMoved() <= 1)
+			lastPlayerPosition = playerPos;
+
+			final LocalPoint playerPosLocal = LocalPoint.fromWorld(client, lastPlayerPosition);
+			if (playerPosLocal != null)
 			{
-				renderTile(graphics, playerPosLocal, color, config.currentTileBorderWidth(), fillColor, config.currentTileCornersOnly(), config.currentTileCornerSize());
-			}
-			else
-			{
-				// It is 1 game tick after the player has stopped moving, so fade out the tile.
-				long timeSinceLastMove = System.currentTimeMillis() - plugin.getLastTimePlayerStoppedMoving();
-				// The fadeout does not begin for 1 game tick, so subtract that.
-				int fadeoutTime = config.trueTileFadeoutTime() - Constants.GAME_TICK_LENGTH;
-				if (fadeoutTime != 0 && timeSinceLastMove < fadeoutTime)
+				Color color = config.highlightCurrentColor();
+				Color fillColor = config.currentTileFillColor();
+				// When not fading out the current tile, or when it has been 1 game tick or less since the player last
+				// moved, draw the tile at full opacity. When using fadeout, drawing the indicator at full opacity for 1
+				// game tick prevents it from fading out when moving on consecutive ticks.
+				if (!config.trueTileFadeout() || client.getTickCount() - lastTickPlayerMoved <= 1)
 				{
-					double opacity = 1.0d - Math.pow(timeSinceLastMove / (double) fadeoutTime, 2);
-					renderTile(graphics, playerPosLocal, ColorUtil.colorWithAlpha(color, (int) (opacity * color.getAlpha())), config.currentTileBorderWidth(), ColorUtil.colorWithAlpha(fillColor, (int) (opacity * fillColor.getAlpha())), config.currentTileCornersOnly(), config.currentTileCornerSize());
+					renderTile(graphics, playerPosLocal, color, config.currentTileBorderWidth(), fillColor, config.currentTileCornersOnly(), config.currentTileCornerSize());
+				}
+				else
+				{
+					// It is 1 game tick after the player has stopped moving, so fade out the tile.
+					long timeSinceLastMove = System.currentTimeMillis() - lastTimePlayerStoppedMoving;
+					// The fadeout does not begin for 1 game tick, so subtract that.
+					int fadeoutTime = config.trueTileFadeoutTime() - Constants.GAME_TICK_LENGTH;
+					if (fadeoutTime != 0 && timeSinceLastMove < fadeoutTime)
+					{
+						double opacity = 1.0d - Math.pow(timeSinceLastMove / (double) fadeoutTime, 2);
+						renderTile(graphics, playerPosLocal, ColorUtil.colorWithAlpha(color, (int) (opacity * color.getAlpha())), config.currentTileBorderWidth(), ColorUtil.colorWithAlpha(fillColor, (int) (opacity * fillColor.getAlpha())), config.currentTileCornersOnly(), config.currentTileCornerSize());
+					}
 				}
 			}
 		}

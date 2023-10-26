@@ -27,13 +27,7 @@ package com.cornertileindicators;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.GameState;
-import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.GameTick;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -51,15 +45,10 @@ import net.runelite.client.ui.overlay.OverlayManager;
 )
 public class CornerTileIndicatorsPlugin extends Plugin
 {
-	@Inject private Client client;
 	@Inject private CornerTileIndicatorsConfig config;
 	@Inject private OverlayManager overlayManager;
 	@Inject private CornerTileIndicatorsOverlay overlay;
 	@Inject private ConfigManager configManager;
-
-	@Getter private WorldPoint lastPlayerPosition = new WorldPoint(0, 0, 0);
-	@Getter private int lastTickPlayerMoved = 0;
-	@Getter private long lastTimePlayerStoppedMoving = 0;
 
 	@Override
 	protected void startUp()
@@ -108,22 +97,5 @@ public class CornerTileIndicatorsPlugin extends Plugin
 	CornerTileIndicatorsConfig provideConfig(ConfigManager configManager)
 	{
 		return configManager.getConfig(CornerTileIndicatorsConfig.class);
-	}
-
-	@Subscribe
-	public void onGameTick(GameTick e)
-	{
-		WorldPoint playerPos = client.getLocalPlayer().getWorldLocation();
-
-		if (!playerPos.equals(lastPlayerPosition))
-		{
-			lastTickPlayerMoved = client.getTickCount();
-		}
-		else if (lastTickPlayerMoved + 1 == client.getTickCount())
-		{
-			lastTimePlayerStoppedMoving = System.currentTimeMillis();
-		}
-
-		lastPlayerPosition = playerPos;
 	}
 }
