@@ -24,6 +24,7 @@
  */
 package com.cornertileindicators;
 
+import static com.cornertileindicators.CornerTileIndicatorsConfig.HoveredTileSailingMode.*;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -70,8 +71,19 @@ public class CornerTileIndicatorsOverlay extends Overlay
 		if (config.highlightHoveredTile())
 		{
 			WorldView wv = client.getLocalPlayer().getWorldView();
+
+			WorldView tlwv = client.getTopLevelWorldView();
+			if (wv != tlwv) {
+				var sailingMode = config.hoveredTileSailingMode();
+				if (
+					sailingMode == WORLD_GRID ||
+					sailingMode == BOTH && wv.getSelectedSceneTile() == null
+				) {
+					wv = tlwv;
+				}
+			}
+
 			Tile tile = wv.getSelectedSceneTile();
-			// If we have tile "selected" render it
 			if (tile != null)
 			{
 				renderTile(graphics, tile.getLocalLocation(), config.highlightHoveredColor(), config.hoveredTileBorderWidth(), config.hoveredTileFillColor(), config.hoveredTileCornersOnly(), config.hoveredTileCornerSize());

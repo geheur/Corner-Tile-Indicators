@@ -24,6 +24,7 @@
  */
 package com.cornertileindicators;
 
+import static com.cornertileindicators.CornerTileIndicatorsConfig.HoveredTileSailingMode.BOAT_GRID;
 import java.awt.Color;
 import net.runelite.client.config.Alpha;
 import net.runelite.client.config.Config;
@@ -179,6 +180,24 @@ public interface CornerTileIndicatorsConfig extends Config
 	default boolean hoveredTileCornersOnly()
 	{
 		return false;
+	}
+
+	enum HoveredTileSailingMode {
+		BOAT_GRID,
+		WORLD_GRID,
+		BOTH
+	}
+
+	@ConfigItem(
+		keyName = "hoveredTileSailingMode",
+		name = "Sailing mode",
+		description = "Which grid this will align with.",
+		position = 6,
+		section = hoveredTile
+	)
+	default HoveredTileSailingMode hoveredTileSailingMode()
+	{
+		return BOAT_GRID;
 	}
 
 	@ConfigItem(
